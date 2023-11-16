@@ -4,10 +4,6 @@ import math
 import sys
 from csv import writer
 
-###############
-# Comment this section out to run
-# without training model
-################
 import numpy as np
 from sklearn.tree import DecisionTreeRegressor
 
@@ -22,12 +18,12 @@ dtr = DecisionTreeRegressor(max_depth=5)
 dtr.fit(train_features, train_targets)
 ## Section end
 
-foods_data = np.loadtxt("./food.csv", delimiter=",")
-train_features2 = foods_data[:, :5]
-train_targets2 = foods_data[:, 5]
+# foods_data = np.loadtxt("./food.csv", delimiter=",")
+# train_features2 = foods_data[:, :5]
+# train_targets2 = foods_data[:, 5]
 
-dtr2 = DecisionTreeRegressor(max_depth=5)
-dtr2.fit(train_features2, train_targets2)
+# dtr2 = DecisionTreeRegressor(max_depth=5)
+# dtr2.fit(train_features2, train_targets2)
 
 
 # General Utility
@@ -189,20 +185,25 @@ class Turn:
             y=40,
             limit=10,
         )
+        self.font = pygame.font.SysFont("Arial", 25)
+        self.instructions = [
+            "Press S to play manually, M to let machine play",
+            "Press E once to approach food",
+        ]
         self.foods = Foods(screen)
         dists = self.foods.get_all_distances_to_food(
             self.fatball.pos, self.fatball.speed
         )
         self.foods.log = dists
         # Prediction for second model
-        prediction = dtr2.predict([dists])
-        print(f"{dists} - {1 if prediction[0] > 0 else 0}")
-        if prediction[0] > 0:
-            self.fatball.color = "white"
-            self.fatball.text = "Eazy peezy!"
-        else:
-            self.fatball.color = "red"
-            self.fatball.text = "This one's a loss"
+        # prediction = dtr2.predict([dists])
+        # print(f"{dists} - {1 if prediction[0] > 0 else 0}")
+        # if prediction[0] > 0:
+        #     self.fatball.color = "white"
+        #     self.fatball.text = "Eazy peezy!"
+        # else:
+        #     self.fatball.color = "red"
+        #     self.fatball.text = "This one's a loss"
 
         self.clock = Clock()
         self.food_i = -1
@@ -217,6 +218,19 @@ class Turn:
         self.fatball.draw(screen)
         self.thermometer.draw(screen, "blue", "darkgreen", "red")
         self.hungrometer.draw(screen, "red", "yellow", "darkgreen")
+        if not self.started:
+            text = self.font.render(self.instructions[0], True, "white")
+            text_rect = text.get_rect(
+                center=(screen.get_width() / 2, screen.get_height() - 200)
+            )
+            screen.blit(text, text_rect)
+        else:
+            if not self.machine and self.food_i == -1:
+                text = self.font.render(self.instructions[1], True, "white")
+                text_rect = text.get_rect(
+                    center=(screen.get_width() / 2, screen.get_height() - 200)
+                )
+                screen.blit(text, text_rect)
 
     def start(self, machine=False):
         self.started = True
@@ -241,13 +255,14 @@ class Turn:
             print("Dead because of temperature")
             self.started = False
             self.foods.log.append(0)
-            write_log("./food.csv", self.foods.log)
+            if self.machine:
+                write_log("./food.csv", self.foods.log)
             self.foods.log = []
         if starvation:
             print("Dead because of hunger")
             self.started = False
-            if len(self.foods.log):
-                self.foods.log.append(0)
+            self.foods.log.append(0)
+            if len(self.foods.log) and self.machine:
                 write_log("./food.csv", self.foods.log)
 
     def run(self):
@@ -280,9 +295,10 @@ class Turn:
                 if not len(self.foods.foods):
                     self.started = False
                     self.foods.log.append(1)
-                    write_log("./food.csv", self.foods.log)
-                    for log in self.log:
-                        write_log("./test_data.csv", log)
+                    if self.machine:
+                        write_log("./food.csv", self.foods.log)
+                    # for log in self.log:
+                    #     write_log("./data.csv", log)
 
 
 class Game:
