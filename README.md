@@ -2,7 +2,7 @@
 
 ![Sample](./sample.png)
 
-Fatball learns to survive by regulating his temperature and hunger. Fatball is trained on human and self play data - it uses the data points from human attempts at regulation of basic variables of survival (temperature and metabolism). Based on the successfull data points (surviving and obtaining 5 pieces of food) Fatball learns to self-regulate.
+Fatball learns to survive by regulating his temperature and energy. Fatball is trained on human and self play data - it uses the data points from human attempts at regulation of basic variables of survival (temperature and menergy). Based on the successfull data points (surviving and obtaining 5 pieces of food) Fatball learns to self-regulate.
 
 Fatball is made for two different motives
 
