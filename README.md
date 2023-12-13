@@ -56,3 +56,5 @@ Tweaking the code will break the model since it is not dynamic.
 Please see the jupyter notebook where we analyze the data. This includes the machine play data which is exported to a csv. We then use Matplotlib to plot temperature against energy. We noted a clear spacial distinction between the data points which resulted in the decision to either move or stay still.
 
 ![Temperature vs Energy](./output.png)
+
+_The plot can be drawn by running the `plot_data` jupyter notebook file._
