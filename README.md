@@ -6,9 +6,8 @@ Fatball learns to survive by regulating his temperature and energy. Fatball is t
 
 Fatball is made for two different motives
 
-1. To familiarise ourselves with basic machine learning methods beginning with most well known ones : decision trees to eventually move on to deep and unsupervised learning
-2. To lay down the foundation for building simulation based animats - beginning with basic survival
-   Fatball allows us to develop skill sets in both domains
+1. To familiarise ourselves with basic machine learning methods beginning with most well known ones : decision trees, to eventually move on to deep and unsupervised learning
+2. To lay down the foundation for building simulation based animats
 
 ## Setup
 
