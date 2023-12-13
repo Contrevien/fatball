@@ -7,7 +7,8 @@ from csv import writer
 import numpy as np
 from sklearn.tree import DecisionTreeRegressor
 
-
+## Section start
+# Decision trees initialization
 data = np.loadtxt("./data.csv", delimiter=",")
 
 train_features = data[:, :3]
@@ -17,13 +18,6 @@ dtr = DecisionTreeRegressor(max_depth=5)
 
 dtr.fit(train_features, train_targets)
 ## Section end
-
-# foods_data = np.loadtxt("./food.csv", delimiter=",")
-# train_features2 = foods_data[:, :5]
-# train_targets2 = foods_data[:, 5]
-
-# dtr2 = DecisionTreeRegressor(max_depth=5)
-# dtr2.fit(train_features2, train_targets2)
 
 
 # General Utility
@@ -81,8 +75,10 @@ class FatBall:
 
 
 class Meter:
-    def __init__(self, width, height, init_value, x, y, limit):
+    def __init__(self, width, height, init_value, x, y, limit, label):
         self.value = init_value
+        self.label = label
+        self.font = pygame.font.SysFont("Arial", 20)
         self.x, self.y = x, y
         self.height = height
         self.width = width
@@ -94,7 +90,7 @@ class Meter:
             "white",
             (
                 ((screen.get_width() / self.limit) * self.value) - 20,
-                self.y,
+                self.y + 25,
                 20,
                 20,
             ),
@@ -115,7 +111,7 @@ class Meter:
     def draw(self, screen, color1, color2, color3):
         bar = pygame.Rect(
             self.x,
-            self.y,
+            self.y + 25,
             self.width,
             self.height,
         )
@@ -125,7 +121,8 @@ class Meter:
         pygame.draw.line(color_rect, color3, (2, 0), (2, 1))
         color_rect = pygame.transform.smoothscale(color_rect, (bar.width, bar.height))
         screen.blit(color_rect, bar)
-
+        text = self.font.render(self.label, True, "white")
+        screen.blit(text, (self.x, self.y))
         self.needle(screen)
 
 
@@ -175,15 +172,22 @@ class Turn:
         self.machine = False
         self.fatball = FatBall(screen.get_width() / 2, screen.get_height() / 2)
         self.thermometer = Meter(
-            width=screen.get_width() - 20, height=20, init_value=5, x=10, y=10, limit=10
+            width=screen.get_width() - 20,
+            height=20,
+            init_value=5,
+            x=10,
+            y=10,
+            limit=10,
+            label="Temperature",
         )
         self.hungrometer = Meter(
             width=screen.get_width() - 20,
             height=20,
             init_value=10,
             x=10,
-            y=40,
-            limit=10,
+            y=60,
+            limit=20,
+            label="Energy",
         )
         self.font = pygame.font.SysFont("Arial", 25)
         self.instructions = [
