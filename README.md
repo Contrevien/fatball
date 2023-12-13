@@ -50,3 +50,7 @@ Pressing `M` will select the Manual mode.
 
 The model is trained enough to know the conditions of the game.
 Tweaking the code will break the model since it is not dynamic.
+
+# Data Processing 
+
+Please see the jupyter notebook where we analyze the  data. This includes the machine play data which is exported to a csv. We then use Matplotlib to plot temperature against energy. We noted a clear spacial distinction between the data points which resulted in the decision to either move or stay still. 
