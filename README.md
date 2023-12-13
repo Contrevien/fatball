@@ -1,12 +1,12 @@
 # Fatball
 
-Fatball learns to survive by regulating his temperature and hunger. Fatball is trained on human and self play data - it uses the data points from human attempts at regulation of basic variables of survival (temperature and metabolism). Based on the successfull data points (surviving and obtaining 5 pieces of food) Fatball learns to self-regulate. 
+Fatball learns to survive by regulating his temperature and hunger. Fatball is trained on human and self play data - it uses the data points from human attempts at regulation of basic variables of survival (temperature and metabolism). Based on the successfull data points (surviving and obtaining 5 pieces of food) Fatball learns to self-regulate.
 
-Fatball is made for two different motives 
-1) To familiarise ourselves with basic machine learning methods beginning with most well known ones : decision trees to eventually move on to deep and unsupervised learning
-2) To lay down the foundation for building simulation based animats - beginning with basic survival
-Fatball allows us to develop skill sets in both domains 
+Fatball is made for two different motives
 
+1. To familiarise ourselves with basic machine learning methods beginning with most well known ones : decision trees to eventually move on to deep and unsupervised learning
+2. To lay down the foundation for building simulation based animats - beginning with basic survival
+   Fatball allows us to develop skill sets in both domains
 
 ## Setup
 
@@ -51,6 +51,8 @@ Pressing `M` will select the Manual mode.
 The model is trained enough to know the conditions of the game.
 Tweaking the code will break the model since it is not dynamic.
 
-# Data Processing 
+# Data Processing
 
-Please see the jupyter notebook where we analyze the  data. This includes the machine play data which is exported to a csv. We then use Matplotlib to plot temperature against energy. We noted a clear spacial distinction between the data points which resulted in the decision to either move or stay still. 
+Please see the jupyter notebook where we analyze the data. This includes the machine play data which is exported to a csv. We then use Matplotlib to plot temperature against energy. We noted a clear spacial distinction between the data points which resulted in the decision to either move or stay still.
+
+![Temperature vs Energy](./output.png)
