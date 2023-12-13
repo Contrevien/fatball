@@ -1,7 +1,12 @@
 # Fatball
 
-A pygame based snake game like implementation, where a ball chases after food and tries to survive.
-A personal project to study Decision trees, even though it is not the best model for these kinds of project.
+Fatball learn to survive by regulating it temperature and hunger. Fatball is trained on human and self play data - it uses the data points from human attempts at regulation of basic variables of survival (temperature and metabolism) and learns based on the data labelled successes to self-regulate. 
+
+Fatball is made for two different motives 
+1) To familiarise ourselves with basic machine learning methods beginning with most well known ones : decision trees to eventually move on to deep and unsupervised learning
+2) To lay down the foundation for building simulation based animats - beginning with basic survival
+Fatball allows us to develop skill sets in both domains 
+
 
 ## Setup
 
@@ -13,13 +18,13 @@ A personal project to study Decision trees, even though it is not the best model
 
 - The ball always start in the center at the beginning of each turn.
 - 5 Foods (green dots) will be scattered randomly across the screen.
-- The ball can do two operations - wait or go to the closest food.
-- There are two gauges on top of the screen to denote - temperature and food, respectively.
+- The ball can do two operations - wait or go to the nearest food.
+- There are two gauges at the top of the screen which shows - temperature and hunger, respectively
 - If the ball stays still, the temperature and food will go down.
 - If the ball moves, the temperature will rise and the food will go down at a higher rate than when stationary.
-- If the temperature drops below 0, or goes over the limit, the game get's over.
-- If the food drops below 0, the game get's over.
-- Gathering tons of food is possible.
+- If the temperature drops below 0, or goes over the limit, its game over.
+- If the food drops below 0, the its game over.
+- There is no limit to food gathering.
 
 ## Modes
 
