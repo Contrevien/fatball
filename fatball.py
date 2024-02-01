@@ -3,21 +3,7 @@ import random
 import math
 import sys
 from csv import writer
-
-import numpy as np
-from sklearn.tree import DecisionTreeRegressor
-
-## Section start
-# Decision trees initialization
-data = np.loadtxt("./data.csv", delimiter=",")
-
-train_features = data[:, :3]
-train_targets = data[:, 3]
-
-dtr = DecisionTreeRegressor(max_depth=5)
-
-dtr.fit(train_features, train_targets)
-## Section end
+from learner import Learner
 
 
 # General Utility
@@ -159,17 +145,25 @@ class Clock:
         self.seconds = 0
         self.elapsed_time = 0
 
-    def run(self, callback):
+    def do_every_second(self, callback):
         self.elapsed_time = self.elapsed_time + self.clock.tick() / 1000.0
         if self.seconds < int(self.elapsed_time):
             self.seconds = int(self.elapsed_time)
-            callback()
+            return callback()
+        return None
+
+    def do_every_x_seconds(self, x, callback):
+        self.elapsed_time = self.elapsed_time + self.clock.tick() / (x * 1000.0)
+        if self.seconds < int(self.elapsed_time):
+            self.seconds = int(self.elapsed_time)
+            return callback()
+        return None
 
 
 class Turn:
     def __init__(self, screen):
         self.started = False
-        self.machine = False
+        self.screen = screen
         self.fatball = FatBall(screen.get_width() / 2, screen.get_height() / 2)
         self.thermometer = Meter(
             width=screen.get_width() - 20,
@@ -199,52 +193,34 @@ class Turn:
             self.fatball.pos, self.fatball.speed
         )
         self.foods.log = dists
-        # Prediction for second model
-        # prediction = dtr2.predict([dists])
-        # print(f"{dists} - {1 if prediction[0] > 0 else 0}")
-        # if prediction[0] > 0:
-        #     self.fatball.color = "white"
-        #     self.fatball.text = "Eazy peezy!"
-        # else:
-        #     self.fatball.color = "red"
-        #     self.fatball.text = "This one's a loss"
 
-        self.clock = Clock()
+        self.moving = False
+        self.waiting = False
+        self.died = False
+        self.eaten = False
         self.food_i = -1
         self.tdps_stable = 0.6
         self.tips_moving = 0.4
         self.hips_stable = 0.5
         self.hips_moving = 0.7
         self.log = []
+        self.score = 0
 
     def draw(self, screen):
         self.foods.draw(screen)
         self.fatball.draw(screen)
         self.thermometer.draw(screen, "blue", "darkgreen", "red")
         self.hungrometer.draw(screen, "red", "yellow", "darkgreen")
-        if not self.started:
-            text = self.font.render(self.instructions[0], True, "white")
-            text_rect = text.get_rect(
-                center=(screen.get_width() / 2, screen.get_height() - 200)
-            )
-            screen.blit(text, text_rect)
-        else:
-            if not self.machine and self.food_i == -1:
-                text = self.font.render(self.instructions[1], True, "white")
-                text_rect = text.get_rect(
-                    center=(screen.get_width() / 2, screen.get_height() - 200)
-                )
-                screen.blit(text, text_rect)
 
-    def start(self, machine=False):
+    def start(self):
         self.started = True
-        self.machine = machine
 
-    def callback(self):
+    def environment(self):
         starvation = False
         exhaustion = False
         hypothermia = False
-        if self.food_i == -1:
+
+        if not self.moving:
             min_t, _ = self.foods.get_min_time_to_food(
                 self.fatball.pos, self.fatball.speed
             )
@@ -257,52 +233,63 @@ class Turn:
             exhaustion = self.thermometer.increase(self.tips_moving)
         if exhaustion or hypothermia:
             print("Dead because of temperature")
+            self.died = True
             self.started = False
-            self.foods.log.append(0)
-            if self.machine:
-                write_log("./food.csv", self.foods.log)
-            self.foods.log = []
         if starvation:
             print("Dead because of hunger")
+            self.died = True
             self.started = False
-            self.foods.log.append(0)
-            if len(self.foods.log) and self.machine:
-                write_log("./food.csv", self.foods.log)
 
-    def run(self):
-        self.clock.run(self.callback)
-        keys = pygame.key.get_pressed()
-        min_t, min_i = self.foods.get_min_time_to_food(
+    
+    def get_state(self):
+        min_t, _ = self.foods.get_min_time_to_food(
             self.fatball.pos, self.fatball.speed
         )
+        state = [0,0,0]
+        if self.thermometer.value < 3:
+            state[0] = -1
+        elif self.thermometer.value > 7:
+            state[0] = 1
 
-        should_move = keys[pygame.K_e]
-        if self.machine:
-            output = dtr.predict(
-                [[self.thermometer.value, self.hungrometer.value, min_t]]
-            )[0]
-            should_move = output > 0
+        if self.hungrometer.value >= 12:
+            state[1] = 2
+        elif self.hungrometer.value >= 6:
+            state[1] = 1
 
-        # When not moving
-        if should_move and self.food_i == -1:
-            self.food_i = min_i
-            self.log.append([self.thermometer.value, self.hungrometer.value, min_t, 1])
-            print(f"{self.thermometer.value},{self.hungrometer.value},{min_t},1")
+        if min_t >= 400:
+            state[2] = 2
+        elif min_t >= 200:
+            state[2] = 1
+            
+        return state
+    
 
-        # When in motion
-        if self.food_i != -1:
+    def move(self):
+        if self.moving:
             done = self.fatball.move(self.foods.foods[self.food_i])
             if done:
                 self.foods.eat(self.food_i)
                 self.hungrometer.increase(self.foods.value)
-                self.food_i = -1
+                self.moving = False                
+                self.eaten = True
+                self.score += 1
                 if not len(self.foods.foods):
-                    self.started = False
-                    self.foods.log.append(1)
-                    if self.machine:
-                        write_log("./food.csv", self.foods.log)
-                    # for log in self.log:
-                    #     write_log("./data.csv", log)
+                    self.foods = Foods(screen=self.screen)
+
+    def step(self, action):
+        min_t, min_i = self.foods.get_min_time_to_food(
+            self.fatball.pos, self.fatball.speed
+        )
+
+        self.eaten = False
+
+        if action == "move" and not self.moving:
+            self.moving = True
+            self.food_i = min_i
+        
+        if action == "wait":
+            self.waiting = True
+        
 
 
 class Game:
@@ -311,35 +298,49 @@ class Game:
         self.ball_radius = 20
         self.screen = pygame.display.set_mode((1280, 720))
         self.clock = pygame.time.Clock()
+        self.ingame_clock = Clock()
+        self.waiting_clock = Clock()
+        self.game_count = 0
 
         self.turn = Turn(self.screen)
 
     def run(self):
         while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
+            self.turn.start()
+            self.game_count += 1
+            print(f"Game count: {self.game_count}, Last score: {self.turn.score}")
+            while True:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
 
-            self.screen.fill("black")
+                self.screen.fill("black")
 
-            self.turn.draw(self.screen)
+                self.ingame_clock.do_every_second(self.turn.environment)
 
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_s] and not self.turn.started:
-                self.turn = Turn(self.screen)
-                self.turn.start()
+                if self.turn.waiting:
+                    done = self.waiting_clock.do_every_x_seconds(3, self.turn.get_state)
+                    if done:
+                        self.turn.waiting = False
+                elif self.turn.moving:
+                    self.turn.move()
+                else:
+                    learner.UpdateQValues(self.turn.died)
+                    if self.turn.died:
+                        break
+                    state = self.turn.get_state()
+                    action_value = learner.act(state, self.game_count)
+                    print(action_value)
+                    self.turn.step(action_value)
 
-            if keys[pygame.K_m]:
-                self.turn = Turn(self.screen)
-                self.turn.start(True)
+                self.turn.draw(self.screen)
 
-            if self.turn.started:
-                self.turn.run()
-
-            pygame.display.flip()
-            self.clock.tick(60)
-
+                pygame.display.update()
+                self.clock.tick(60)
+            self.turn = Turn(self.screen)
+        
+learner = Learner()
 
 if __name__ == "__main__":
     pygame.init()
