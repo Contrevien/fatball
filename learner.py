@@ -4,7 +4,7 @@ import json
 class Learner(object):
     def __init__(self):
         # Learning parameters
-        self.epsilon = 0.95
+        self.epsilon = 0.1
         self.lr = 0.7
         self.discount = .5
 
@@ -31,15 +31,6 @@ class Learner(object):
             json.dump(self.qvalues, f)
             
     def act(self, state, n_games):
-        if n_games > 50:
-            self.epsilon = 0.7
-        if n_games > 80:
-            self.epsilon = 0.5
-        if n_games > 100:
-            self.epsilon = 0.2
-        if n_games > 150:
-            self.epsilon = 0.1
-            
         # Epsilon greedy
         rand = random.uniform(0,1)
         if rand < self.epsilon:
@@ -65,7 +56,7 @@ class Learner(object):
                 sN = history[0]['state']
                 aN = history[0]['action']
                 state_str = self._GetStateStr(sN)
-                reward = -1
+                reward = -2
                 self.qvalues[state_str][aN] = (1-self.lr) * self.qvalues[state_str][aN] + self.lr * reward # Bellman equation - there is no future state since game is over
             else:
                 s1 = h['state'] # current state
@@ -73,14 +64,19 @@ class Learner(object):
                 a0 = history[i+1]['action'] # action taken at previous state
                 
                 reward = 0
-                if s1[0] == 0: # ball maintained the temperature
+                if s0[0] == 1 and a0 == 1: # decided to move when temperature was high
+                    reward = -1
+                    print(f"Reward for temperature: -1")
+                if s0[0] == -1 and a0 == 0: # decided to wait when temperature was low
+                    reward = -1
+                    print(f"Reward for temperature: -1")
+                if s1[1] >= s0[1]: # ball maintained the energy
                     reward = 1
-                if s1[1] == 1: # ball maintained the energy
-                    reward = 1
+                    # print(f"Reward for energy: +1")
                     
                 state_str = self._GetStateStr(s0)
                 new_state_str = self._GetStateStr(s1)
                 self.qvalues[state_str][a0] = (1-self.lr) * (self.qvalues[state_str][a0]) + self.lr * (reward + self.discount*max(self.qvalues[new_state_str])) # Bellman equation
 
     def _GetStateStr(self, state):
-        return str((state[0],state[1],state[2]))
+        return str((state[0],state[1]))

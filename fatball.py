@@ -152,7 +152,7 @@ class Clock:
             return callback()
         return None
 
-    def do_every_x_seconds(self, x, callback):
+    def do_after_x_seconds(self, x, callback):
         self.elapsed_time = self.elapsed_time + self.clock.tick() / (x * 1000.0)
         if self.seconds < int(self.elapsed_time):
             self.seconds = int(self.elapsed_time)
@@ -199,10 +199,10 @@ class Turn:
         self.died = False
         self.eaten = False
         self.food_i = -1
-        self.tdps_stable = 0.6
+        self.tdps_stable = 0.3
         self.tips_moving = 0.4
-        self.hips_stable = 0.5
-        self.hips_moving = 0.7
+        self.hips_stable = 0.2
+        self.hips_moving = 0.4
         self.log = []
         self.score = 0
 
@@ -224,8 +224,6 @@ class Turn:
             min_t, _ = self.foods.get_min_time_to_food(
                 self.fatball.pos, self.fatball.speed
             )
-            self.log.append([self.thermometer.value, self.hungrometer.value, min_t, 0])
-            print(f"{self.thermometer.value},{self.hungrometer.value},{min_t},0")
             starvation = self.hungrometer.decrease(self.hips_stable)
             hypothermia = self.thermometer.decrease(self.tdps_stable)
         else:
@@ -242,39 +240,36 @@ class Turn:
 
     
     def get_state(self):
-        min_t, _ = self.foods.get_min_time_to_food(
-            self.fatball.pos, self.fatball.speed
-        )
-        state = [0,0,0]
+        state = [0,0]
         if self.thermometer.value < 3:
             state[0] = -1
         elif self.thermometer.value > 7:
             state[0] = 1
 
-        if self.hungrometer.value >= 12:
-            state[1] = 2
-        elif self.hungrometer.value >= 6:
-            state[1] = 1
-
-        if min_t >= 400:
-            state[2] = 2
-        elif min_t >= 200:
-            state[2] = 1
-            
+        state[1] = math.floor(self.hungrometer.value)
+        
         return state
     
 
     def move(self):
         if self.moving:
+            if self.eaten:
+                _, min_i = self.foods.get_min_time_to_food(
+                    self.fatball.pos, self.fatball.speed
+                )
+                self.food_i = min_i
+                self.eaten = False
             done = self.fatball.move(self.foods.foods[self.food_i])
             if done:
                 self.foods.eat(self.food_i)
                 self.hungrometer.increase(self.foods.value)
-                self.moving = False                
                 self.eaten = True
                 self.score += 1
                 if not len(self.foods.foods):
                     self.foods = Foods(screen=self.screen)
+    
+    def stop_moving(self):
+        self.moving = False
 
     def step(self, action):
         min_t, min_i = self.foods.get_min_time_to_food(
@@ -301,14 +296,17 @@ class Game:
         self.ingame_clock = Clock()
         self.waiting_clock = Clock()
         self.game_count = 0
+        self.font = pygame.font.SysFont("Arial", 25)
+        self.last_score = 0
 
         self.turn = Turn(self.screen)
 
     def run(self):
         while True:
+            learner.Reset()
             self.turn.start()
             self.game_count += 1
-            print(f"Game count: {self.game_count}, Last score: {self.turn.score}")
+            print(f"Game count: {self.game_count}, Last score: {self.last_score}")
             while True:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
@@ -320,25 +318,35 @@ class Game:
                 self.ingame_clock.do_every_second(self.turn.environment)
 
                 if self.turn.waiting:
-                    done = self.waiting_clock.do_every_x_seconds(3, self.turn.get_state)
+                    done = self.waiting_clock.do_after_x_seconds(3, self.turn.get_state)
                     if done:
                         self.turn.waiting = False
                 elif self.turn.moving:
                     self.turn.move()
+                    self.waiting_clock.do_after_x_seconds(3, self.turn.stop_moving)
                 else:
                     learner.UpdateQValues(self.turn.died)
                     if self.turn.died:
                         break
                     state = self.turn.get_state()
                     action_value = learner.act(state, self.game_count)
-                    print(action_value)
                     self.turn.step(action_value)
 
                 self.turn.draw(self.screen)
 
+                text = self.font.render(f"Game count: {self.game_count}, Last score: {self.last_score}", True, "white")
+                text_rect = text.get_rect(
+                    center=(self.screen.get_width() - 200, self.screen.get_height() - 50)
+                )
+                self.screen.blit(text, text_rect)
+
                 pygame.display.update()
                 self.clock.tick(60)
+            self.last_score = self.turn.score
             self.turn = Turn(self.screen)
+            if self.game_count % 50 == 0: # Save qvalues every 100 games
+                print("Save Qvals")
+                learner.SaveQvalues()
         
 learner = Learner()
 
